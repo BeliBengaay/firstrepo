@@ -1,1 +1,31 @@
-dummy file 1
+$server = "YourServerName"
+$database = "YourDatabaseName"
+$outputFolder = "C:\MergeScripts"
+
+if (!(Test-Path $outputFolder)) {
+    New-Item -ItemType Directory -Path $outputFolder | Out-Null
+}
+
+# Load all table names
+$tables = Invoke-Sqlcmd -ServerInstance $server -Database $database -Query "
+    SELECT TABLE_SCHEMA, TABLE_NAME 
+    FROM INFORMATION_SCHEMA.TABLES 
+    WHERE TABLE_TYPE = 'BASE TABLE'
+    ORDER BY TABLE_SCHEMA, TABLE_NAME;
+"
+
+foreach ($t in $tables) {
+    $schema = $t.TABLE_SCHEMA
+    $table  = $t.TABLE_NAME
+
+    $result = Invoke-Sqlcmd -ServerInstance $server -Database $database -Query "
+        EXEC dbo.usp_generate_merge 
+            @schema_name = '$schema',
+            @table_name = '$table';
+    "
+
+    $filePath = Join-Path $outputFolder "$table.sql"
+    $result.GeneratedMERGE | Out-File -FilePath $filePath -Encoding UTF8
+
+    Write-Host "Generated: $filePath"
+}
