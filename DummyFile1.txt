@@ -1,31 +1,35 @@
-$server = "YourServerName"
-$database = "YourDatabaseName"
+$server = "YourServer"
+$database = "YourDB"
 $outputFolder = "C:\MergeScripts"
 
 if (!(Test-Path $outputFolder)) {
     New-Item -ItemType Directory -Path $outputFolder | Out-Null
 }
 
-# Load all table names
-$tables = Invoke-Sqlcmd -ServerInstance $server -Database $database -Query "
-    SELECT TABLE_SCHEMA, TABLE_NAME 
-    FROM INFORMATION_SCHEMA.TABLES 
-    WHERE TABLE_TYPE = 'BASE TABLE'
-    ORDER BY TABLE_SCHEMA, TABLE_NAME;
+# Get table list using sqlcmd WITH TRUST SERVER CERT
+$tables = & sqlcmd -S $server -d $database -C -h -1 -W -Q "
+    SET NOCOUNT ON;
+    SELECT TABLE_SCHEMA + '.' + TABLE_NAME
+    FROM INFORMATION_SCHEMA.TABLES
+    WHERE TABLE_TYPE = 'BASE TABLE';
 "
 
+$tables = $tables -split "`r?`n" | Where-Object { $_.Trim() -ne "" }
+
 foreach ($t in $tables) {
-    $schema = $t.TABLE_SCHEMA
-    $table  = $t.TABLE_NAME
 
-    $result = Invoke-Sqlcmd -ServerInstance $server -Database $database -Query "
-        EXEC dbo.usp_generate_merge 
-            @schema_name = '$schema',
-            @table_name = '$table';
-    "
-
+    $schema, $table = $t.Split('.')
     $filePath = Join-Path $outputFolder "$table.sql"
-    $result.GeneratedMERGE | Out-File -FilePath $filePath -Encoding UTF8
+
+    $cmd = @"
+SET NOCOUNT ON;
+EXEC dbo.usp_generate_merge
+    @schema_name = '$schema',
+    @table_name = '$table';
+"@
+
+    # Generate file via sqlcmd WITH TRUST CERT
+    & sqlcmd -S $server -d $database -C -h -1 -W -Q $cmd > $filePath
 
     Write-Host "Generated: $filePath"
 }
