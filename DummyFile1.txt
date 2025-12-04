@@ -6,7 +6,9 @@ if (!(Test-Path $outputFolder)) {
     New-Item -ItemType Directory -Path $outputFolder | Out-Null
 }
 
-# Get table list using sqlcmd WITH TRUST SERVER CERT
+$failedTables = @()
+
+# Get table list
 $tables = & sqlcmd -S $server -d $database -C -h -1 -W -Q "
     SET NOCOUNT ON;
     SELECT TABLE_SCHEMA + '.' + TABLE_NAME
@@ -28,8 +30,36 @@ EXEC dbo.usp_generate_merge
     @table_name = '$table';
 "@
 
-    # Generate file via sqlcmd WITH TRUST CERT
-    & sqlcmd -S $server -d $database -C -h -1 -W -Q $cmd > $filePath
+    try {
+        # Run sqlcmd and capture stderr too
+        $output = & sqlcmd -S $server -d $database -C -h -1 -W -Q $cmd 2>&1
 
-    Write-Host "Generated: $filePath"
+        if ($LASTEXITCODE -ne 0) {
+            # sqlcmd error occurred
+            $failedTables += $t
+            Write-Host "FAILED: $t" -ForegroundColor Red
+            continue
+        }
+
+        $output | Out-File -FilePath $filePath -Encoding UTF8
+        Write-Host "Generated: $filePath"
+    }
+    catch {
+        # Any unexpected PowerShell-level failure
+        $failedTables += $t
+        Write-Host "FAILED (PS ERROR): $t" -ForegroundColor Red
+    }
+}
+
+Write-Host ""
+Write-Host "===== SUMMARY ====="
+Write-Host "Total tables: $($tables.Count)"
+Write-Host "Failed tables: $($failedTables.Count)" -ForegroundColor Yellow
+
+if ($failedTables.Count -gt 0) {
+    Write-Host "List of failed tables:"
+    $failedTables | ForEach-Object { Write-Host " - $_" -ForegroundColor Yellow }
+}
+else {
+    Write-Host "All tables processed successfully!" -ForegroundColor Green
 }
