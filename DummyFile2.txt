@@ -1,10 +1,1 @@
-           F5 BIG-IP Edge Only                     Overlap                        Zscaler Only
-   ┌─────────────────────────────────┐   ┌─────────────────────────────┐   ┌──────────────────────────────────────┐
-   │ • Full-tunnel SSL/IPsec VPN     │   │ • Secure remote access      │   │ • Cloud SWG + full TLS decryption    │
-   │ • Direct RDP/SSH over tunnel    │   │ • Identity-based access     │   │ • Inline CASB + DLP                  │
-   │ • Always-on VPN                 │   │ • MFA integration           │   │ • Cloud firewall & sandboxing        │
-   │ • On-prem HA clustering         │   │ • Endpoint client option    │   │ • Browser isolation                 │
-   │ • F5 ecosystem integration      │   │ • Per-app segmentation      │   │ • No backhauling (direct breakout)   │
-   │ • Layer 3 network access        │   │ • Logging & reporting       │   │ • Global PoPs & private backbone     │
-   │ • Legacy protocol support       │   └─────────────────────────────┘   │ • AI/UEBA threat detection           │
-   └─────────────────────────────────┘          Shared zone            └──────────────────────────────────────┘
+Invoke-WebRequest https://raw.githubusercontent.com/newren/git-filter-repo/master/git-filter-repo -OutFile "$env:USERPROFILE\git-filter-repo.py"
