@@ -1,32 +1,6 @@
-<Project>
-
-  <Target Name="Overlay_ServiceImplementation_Bin"
-          AfterTargets="Build"
-          Condition="'$(MSBuildProjectName)' == 'ServiceImplementation'">
-
-    <PropertyGroup>
-      <!-- Where ServiceImplementation just built its output -->
-      <ServiceImplementationBin>$(TargetDir)</ServiceImplementationBin>
-
-      <!-- Your final aggregated output (from OutputPath) -->
-      <FinalOutputBin>$(OutputPath)</FinalOutputBin>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <!-- All relevant runtime binaries -->
-      <ServiceImplementationAssemblies Include="$(ServiceImplementationBin)*.dll" />
-      <ServiceImplementationAssemblies Include="$(ServiceImplementationBin)*.exe" />
-    </ItemGroup>
-
-    <Message Text="Overlaying ServiceImplementation output to final bin: $(FinalOutputBin)"
-             Importance="high" />
-
-    <Copy
-      SourceFiles="@(ServiceImplementationAssemblies)"
-      DestinationFolder="$(FinalOutputBin)"
-      SkipUnchangedFiles="true"
-      OverwriteReadOnlyFiles="true" />
-
-  </Target>
-
-</Project>
+<PropertyGroup>
+  <AssemblySearchPath_UseAssemblyFoldersConfigFileSearchPath>false</AssemblySearchPath_UseAssemblyFoldersConfigFileSearchPath>
+  <AssemblySearchPath_UseRegistry>false</AssemblySearchPath_UseRegistry>
+  <AssemblySearchPath_UseAssemblyFolders>false</AssemblySearchPath_UseAssemblyFolders>
+  <AssemblySearchPath_UseGAC>false</AssemblySearchPath_UseGAC>
+</PropertyGroup>
