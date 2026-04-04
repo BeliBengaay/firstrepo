@@ -1,4 +1,32 @@
-https://www.youtube.com/watch?v=K-u8sotDqq4
+<Project>
 
-Invoke-WebRequest https://raw.githubusercontent.com/newren/git-filter-repo/master/git-filter-repo -OutFile "$env:USERPROFILE\git-filter-repo.py"
+  <Target Name="Overlay_ServiceImplementation_Bin"
+          AfterTargets="Build"
+          Condition="'$(MSBuildProjectName)' == 'ServiceImplementation'">
 
+    <PropertyGroup>
+      <!-- Where ServiceImplementation just built its output -->
+      <ServiceImplementationBin>$(TargetDir)</ServiceImplementationBin>
+
+      <!-- Your final aggregated output (from OutputPath) -->
+      <FinalOutputBin>$(OutputPath)</FinalOutputBin>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- All relevant runtime binaries -->
+      <ServiceImplementationAssemblies Include="$(ServiceImplementationBin)*.dll" />
+      <ServiceImplementationAssemblies Include="$(ServiceImplementationBin)*.exe" />
+    </ItemGroup>
+
+    <Message Text="Overlaying ServiceImplementation output to final bin: $(FinalOutputBin)"
+             Importance="high" />
+
+    <Copy
+      SourceFiles="@(ServiceImplementationAssemblies)"
+      DestinationFolder="$(FinalOutputBin)"
+      SkipUnchangedFiles="true"
+      OverwriteReadOnlyFiles="true" />
+
+  </Target>
+
+</Project>
