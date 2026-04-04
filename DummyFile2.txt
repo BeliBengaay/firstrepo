@@ -1,6 +1,9 @@
-<PropertyGroup>
-  <AssemblySearchPath_UseAssemblyFoldersConfigFileSearchPath>false</AssemblySearchPath_UseAssemblyFoldersConfigFileSearchPath>
-  <AssemblySearchPath_UseRegistry>false</AssemblySearchPath_UseRegistry>
-  <AssemblySearchPath_UseAssemblyFolders>false</AssemblySearchPath_UseAssemblyFolders>
-  <AssemblySearchPath_UseGAC>false</AssemblySearchPath_UseGAC>
-</PropertyGroup>
+<Project>
+  <ItemGroup>
+    <Reference Update="System.Memory"
+               Condition="Exists('$(SolutionDir)Lib\System.Memory.dll')">
+      <HintPath>$(SolutionDir)Lib\System.Memory.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+</Project>
