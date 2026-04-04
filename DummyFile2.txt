@@ -1,9 +1,21 @@
 <Project>
+  <!-- Inject System.Memory reference for all projects -->
   <ItemGroup>
-    <Reference Update="System.Memory"
-               Condition="Exists('$(SolutionDir)Lib\System.Memory.dll')">
-      <HintPath>$(SolutionDir)Lib\System.Memory.dll</HintPath>
+    <Reference Include="System.Memory">
+      <HintPath>$(MSBuildThisFileDirectory)Lib\System.Memory.dll</HintPath>
       <Private>true</Private>
     </Reference>
   </ItemGroup>
+
+  <!-- Debug message to confirm this file is being applied -->
+  <Target Name="Debug_SystemMemory_Override"
+          BeforeTargets="ResolveAssemblyReferences">
+
+    <Message Text="*** Directory.Build.targets applied: Injecting System.Memory from Lib ***"
+             Importance="high" />
+
+    <Message Text="*** Expected Path: $(MSBuildThisFileDirectory)Lib\System.Memory.dll ***"
+             Importance="high" />
+
+  </Target>
 </Project>
