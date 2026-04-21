@@ -1,21 +1,63 @@
-<Project>
-  <!-- Inject System.Memory reference for all projects -->
-  <ItemGroup>
-    <Reference Include="System.Memory">
-      <HintPath>$(MSBuildThisFileDirectory)Lib\System.Memory.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
-  </ItemGroup>
+param(
+    [Parameter(Mandatory = $true)]
+    [string]$SqlCmdPath,
 
-  <!-- Debug message to confirm this file is being applied -->
-  <Target Name="Debug_SystemMemory_Override"
-          BeforeTargets="ResolveAssemblyReferences">
+    [Parameter(Mandatory = $true)]
+    [string]$Server,          # use "servername,port"
 
-    <Message Text="*** Directory.Build.targets applied: Injecting System.Memory from Lib ***"
-             Importance="high" />
+    [Parameter(Mandatory = $true)]
+    [string]$Database,
 
-    <Message Text="*** Expected Path: $(MSBuildThisFileDirectory)Lib\System.Memory.dll ***"
-             Importance="high" />
+    [Parameter(Mandatory = $true)]
+    [string]$ScriptRootPath   # folder where files exist (artifact root)
+)
 
-  </Target>
-</Project>
+# Resolve full path to manifest file
+$manifestFile = Join-Path $ScriptRootPath "PreDeploy_BreakingChanges.sql"
+
+if (!(Test-Path $SqlCmdPath)) {
+    Write-Error "sqlcmd not found at path: $SqlCmdPath"
+    exit 1
+}
+
+if (!(Test-Path $manifestFile)) {
+    Write-Error "Manifest file not found: $manifestFile"
+    exit 1
+}
+
+# Use tcp format for consistency
+$serverArg = "tcp:$Server"
+
+Write-Host "----------------------------------------"
+Write-Host "Executing Pre-Deployment Breaking Changes"
+Write-Host "Server   : $serverArg"
+Write-Host "Database : $Database"
+Write-Host "Script   : $manifestFile"
+Write-Host "----------------------------------------"
+
+# Change working directory so :r paths resolve correctly
+Push-Location $ScriptRootPath
+
+try {
+    & $SqlCmdPath `
+        -S $serverArg `
+        -d $Database `
+        -E `
+        -b `
+        -e `
+        -i "PreDeploy_BreakingChanges.sql"
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "sqlcmd execution failed with exit code $LASTEXITCODE"
+        exit $LASTEXITCODE
+    }
+
+    Write-Host "Pre-deployment breaking changes executed successfully"
+}
+catch {
+    Write-Error "Error executing pre-deployment scripts: $_"
+    exit 1
+}
+finally {
+    Pop-Location
+}
