@@ -1,27 +1,26 @@
 <ItemGroup>
-  <None Include="PreDeploy_BreakingChanges.sql">
+  <None Include="Scripts\PreDeploy_BreakingChanges.sql">
     <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
   </None>
 </ItemGroup>
 
 <Target Name="CopyManifestFilesToOutput" BeforeTargets="PrepareForRun">
 
-  <ReadLinesFromFile File="PreDeploy_BreakingChanges.sql">
+  <ReadLinesFromFile File="Scripts\PreDeploy_BreakingChanges.sql">
     <Output TaskParameter="Lines" ItemName="_RawManifestLines" />
   </ReadLinesFromFile>
 
   <ItemGroup>
-    <_ManifestPaths Include="$([System.Text.RegularExpressions.Regex]::Replace('%(_RawManifestLines.Identity)', '^\s*:r\s+[&quot;&apos;]?', '').Trim().Trim('&quot;').Trim(&quot;'&quot;))"
+    <_ManifestPaths Include="$([System.Text.RegularExpressions.Regex]::Replace('%(_RawManifestLines.Identity)', '^\s*:r\s+[&quot;&apos;]?(\.\\)?', '').Trim().Trim('&quot;').Trim(&quot;'&quot;))"
                     Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_RawManifestLines.Identity)', '^\s*:r\s+'))" />
   </ItemGroup>
 
-  <!-- Duplicate check only if entries exist -->
   <Error Condition="'@(_ManifestPaths)' != '' AND '@(_ManifestPaths)' != '@(_ManifestPaths->Distinct())'"
          Text="Duplicate entries found in PreDeploy_BreakingChanges.sql - please clean up the manifest." />
 
   <ItemGroup Condition="'@(_ManifestPaths)' != ''">
     <_ResolvedPaths Include="@(_ManifestPaths)">
-      <ResolvedFullPath>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\%(_ManifestPaths.Identity)'))</ResolvedFullPath>
+      <ResolvedFullPath>$([System.IO.Path]::GetFullPath('$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '%(_ManifestPaths.Identity)'))'))</ResolvedFullPath>
       <RelativePath>%(_ManifestPaths.Identity)</RelativePath>
     </_ResolvedPaths>
   </ItemGroup>
