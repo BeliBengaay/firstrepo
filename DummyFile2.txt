@@ -15,20 +15,24 @@
                     Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_RawManifestLines.Identity)', '^\s*:r\s+'))" />
   </ItemGroup>
 
-  <Error Condition="'@(_ManifestPaths)' != '@(_ManifestPaths->Distinct())'"
+  <!-- Duplicate check only if entries exist -->
+  <Error Condition="'@(_ManifestPaths)' != '' AND '@(_ManifestPaths)' != '@(_ManifestPaths->Distinct())'"
          Text="Duplicate entries found in PreDeploy_BreakingChanges.sql - please clean up the manifest." />
 
-  <ItemGroup>
+  <ItemGroup Condition="'@(_ManifestPaths)' != ''">
     <_ResolvedPaths Include="@(_ManifestPaths)">
-      <ResolvedFullPath>$([System.IO.Path]::GetFullPath('%(_ManifestPaths.Identity)', '$(MSBuildProjectDirectory)'))</ResolvedFullPath>
+      <ResolvedFullPath>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\%(_ManifestPaths.Identity)'))</ResolvedFullPath>
       <RelativePath>%(_ManifestPaths.Identity)</RelativePath>
     </_ResolvedPaths>
   </ItemGroup>
 
-  <Error Condition="!Exists('%(_ResolvedPaths.ResolvedFullPath)')"
+  <!-- Validate only when scripts exist -->
+  <Error Condition="'@(_ResolvedPaths)' != '' AND !Exists('%(_ResolvedPaths.ResolvedFullPath)')"
          Text="Build Error: Breaking change script not found: %(_ResolvedPaths.ResolvedFullPath)" />
 
-  <Copy SourceFiles="@(_ResolvedPaths->'%(ResolvedFullPath)')"
+  <!-- Copy only when scripts exist -->
+  <Copy Condition="'@(_ResolvedPaths)' != ''"
+        SourceFiles="@(_ResolvedPaths->'%(ResolvedFullPath)')"
         DestinationFiles="@(_ResolvedPaths->'$(TargetDir)PreDeploy_BreakingChanges\%(RelativePath)')"
         SkipUnchangedFiles="true" />
 
