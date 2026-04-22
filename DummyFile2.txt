@@ -20,16 +20,14 @@
 
   <ItemGroup Condition="'@(_ManifestPaths)' != ''">
     <_ResolvedPaths Include="@(_ManifestPaths)">
-      <ResolvedFullPath>$([System.IO.Path]::GetFullPath('$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '%(_ManifestPaths.Identity)'))'))</ResolvedFullPath>
-      <RelativePath>%(_ManifestPaths.Identity)</RelativePath>
+      <ResolvedFullPath>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\%(Identity)'))</ResolvedFullPath>
+      <RelativePath>%(Identity)</RelativePath>
     </_ResolvedPaths>
   </ItemGroup>
 
-  <!-- Validate only when scripts exist -->
   <Error Condition="'@(_ResolvedPaths)' != '' AND !Exists('%(_ResolvedPaths.ResolvedFullPath)')"
          Text="Build Error: Breaking change script not found: %(_ResolvedPaths.ResolvedFullPath)" />
 
-  <!-- Copy only when scripts exist -->
   <Copy Condition="'@(_ResolvedPaths)' != ''"
         SourceFiles="@(_ResolvedPaths->'%(ResolvedFullPath)')"
         DestinationFiles="@(_ResolvedPaths->'$(TargetDir)PreDeploy_BreakingChanges\%(RelativePath)')"
