@@ -1,63 +1,35 @@
-param(
-    [Parameter(Mandatory = $true)]
-    [string]$SqlCmdPath,
+<ItemGroup>
+  <None Include="PreDeploy_BreakingChanges.sql">
+    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+  </None>
+</ItemGroup>
 
-    [Parameter(Mandatory = $true)]
-    [string]$Server,          # use "servername,port"
+<Target Name="CopyManifestFilesToOutput" BeforeTargets="PrepareForRun">
 
-    [Parameter(Mandatory = $true)]
-    [string]$Database,
+  <ReadLinesFromFile File="PreDeploy_BreakingChanges.sql">
+    <Output TaskParameter="Lines" ItemName="_RawManifestLines" />
+  </ReadLinesFromFile>
 
-    [Parameter(Mandatory = $true)]
-    [string]$ScriptRootPath   # folder where files exist (artifact root)
-)
+  <ItemGroup>
+    <_ManifestPaths Include="$([System.Text.RegularExpressions.Regex]::Replace('%(_RawManifestLines.Identity)', '^\s*:r\s+[&quot;&apos;]?', '').Trim().Trim('&quot;').Trim(&quot;'&quot;))"
+                    Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_RawManifestLines.Identity)', '^\s*:r\s+'))" />
+  </ItemGroup>
 
-# Resolve full path to manifest file
-$manifestFile = Join-Path $ScriptRootPath "PreDeploy_BreakingChanges.sql"
+  <Error Condition="'@(_ManifestPaths)' != '@(_ManifestPaths->Distinct())'"
+         Text="Duplicate entries found in PreDeploy_BreakingChanges.sql - please clean up the manifest." />
 
-if (!(Test-Path $SqlCmdPath)) {
-    Write-Error "sqlcmd not found at path: $SqlCmdPath"
-    exit 1
-}
+  <ItemGroup>
+    <_ResolvedPaths Include="@(_ManifestPaths)">
+      <FullPath>$([System.IO.Path]::GetFullPath('%(_ManifestPaths.Identity)', '$(MSBuildProjectDirectory)'))</FullPath>
+      <RelativePath>%(_ManifestPaths.Identity)</RelativePath>
+    </_ResolvedPaths>
+  </ItemGroup>
 
-if (!(Test-Path $manifestFile)) {
-    Write-Error "Manifest file not found: $manifestFile"
-    exit 1
-}
+  <Error Condition="!Exists('%(_ResolvedPaths.FullPath)')"
+         Text="Build Error: Breaking change script not found: %(_ResolvedPaths.FullPath)" />
 
-# Use tcp format for consistency
-$serverArg = "tcp:$Server"
+  <Copy SourceFiles="@(_ResolvedPaths->'%(FullPath)')"
+        DestinationFiles="@(_ResolvedPaths->'$(TargetDir)PreDeploy_BreakingChanges\%(RelativePath)')"
+        SkipUnchangedFiles="true" />
 
-Write-Host "----------------------------------------"
-Write-Host "Executing Pre-Deployment Breaking Changes"
-Write-Host "Server   : $serverArg"
-Write-Host "Database : $Database"
-Write-Host "Script   : $manifestFile"
-Write-Host "----------------------------------------"
-
-# Change working directory so :r paths resolve correctly
-Push-Location $ScriptRootPath
-
-try {
-    & $SqlCmdPath `
-        -S $serverArg `
-        -d $Database `
-        -E `
-        -b `
-        -e `
-        -i "PreDeploy_BreakingChanges.sql"
-
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "sqlcmd execution failed with exit code $LASTEXITCODE"
-        exit $LASTEXITCODE
-    }
-
-    Write-Host "Pre-deployment breaking changes executed successfully"
-}
-catch {
-    Write-Error "Error executing pre-deployment scripts: $_"
-    exit 1
-}
-finally {
-    Pop-Location
-}
+</Target>
