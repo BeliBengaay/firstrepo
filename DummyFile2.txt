@@ -20,12 +20,12 @@
   <Error Condition="'@(_ManifestPaths)' != '' AND '@(_ManifestPaths->'%(RelativePath)')' != '@(_ManifestPaths->'%(RelativePath)'->Distinct())'"
          Text="Duplicate entries found in PreDeploy_BreakingChanges.sql" />
 
-  <Error Condition="'@(_ManifestPaths)' != '' AND !Exists('$(MSBuildProjectDirectory)\%(_ManifestPaths.RelativePath)')"
-         Text="Build Error: Breaking change script not found: $(MSBuildProjectDirectory)\%(_ManifestPaths.RelativePath)" />
+  <Error Condition="'@(_ManifestPaths)' != '' AND !Exists('$(MSBuildProjectDirectory)\Scripts\%(_ManifestPaths.RelativePath)')"
+         Text="Build Error: Breaking change script not found at: $(MSBuildProjectDirectory)\Scripts\%(_ManifestPaths.RelativePath)" />
 
   <Copy Condition="'@(_ManifestPaths)' != ''"
-        SourceFiles="@(_ManifestPaths->'$(MSBuildProjectDirectory)\%(RelativePath)')"
-        DestinationFiles="@(_ManifestPaths->'$(TargetDir)PreDeploy_BreakingChanges\%(RelativePath)')"
+        SourceFiles="@(_ManifestPaths->'$(MSBuildProjectDirectory)\Scripts\%(RelativePath)')"
+        DestinationFiles="@(_ManifestPaths->'$(TargetDir)Scripts\%(RelativePath)')"
         SkipUnchangedFiles="true" />
 
 </Target>
