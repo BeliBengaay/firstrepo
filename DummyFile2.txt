@@ -1,9 +1,3 @@
-<ItemGroup>
-  <None Include="Scripts\PreDeploy_BreakingChanges.sql">
-    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-  </None>
-</ItemGroup>
-
 <Target Name="CopyManifestFilesToOutput" BeforeTargets="PrepareForRun">
 
   <ReadLinesFromFile File="Scripts\PreDeploy_BreakingChanges.sql">
@@ -11,26 +5,25 @@
   </ReadLinesFromFile>
 
   <ItemGroup>
-    <_ManifestPaths Include="@(_RawManifestLines)"
+    <_FilteredPaths Include="@(_RawManifestLines)"
                     Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(Identity)', '^\s*:r\s+'))">
-      <RawPath>$([System.Text.RegularExpressions.Regex]::Replace('%(Identity)', '^\s*:r\s+[&quot;&apos;]?(\.\\)?', ''))</RawPath>
-    </_ManifestPaths>
+      <RegexPath>$([System.Text.RegularExpressions.Regex]::Replace('%(Identity)', '^\s*:r\s+[&quot;&apos;]?(\.\\)?', ''))</RegexPath>
+    </_FilteredPaths>
+  </ItemGroup>
 
-    <_CleanManifestPaths Include="@(_ManifestPaths)">
-      <CleanPath>$([System.String]::new('%(RawPath)').Replace('%0D', '').Replace('%0A', '').Trim().Trim('&quot;').Trim("'"))</CleanPath>
+  <ItemGroup>
+    <_CleanManifestPaths Include="@(_FilteredPaths)">
+      <CleanPath>$([System.String]::new('%(RegexPath)').Replace('%0D', '').Replace('%0A', '').Trim().Trim('&quot;').Trim("'"))</CleanPath>
     </_CleanManifestPaths>
   </ItemGroup>
 
-  <Message Importance="High" Text="--- DEBUG MANIFEST START ---" />
-  <Message Importance="High" Text="Cleaned Filename: [%(_CleanManifestPaths.CleanPath)]" />
-  <Message Importance="High" Text="Full Source Path: [$(MSBuildProjectDirectory)\Scripts\%(_CleanManifestPaths.CleanPath)]" />
-  <Message Importance="High" Text="--- DEBUG MANIFEST END ---" />
+  <Message Importance="High" Text="--- DEBUG: Script found: [%(_CleanManifestPaths.CleanPath)]" />
 
   <Error Condition="'@(_CleanManifestPaths)' != '' AND '@(_CleanManifestPaths->'%(CleanPath)')' != '@(_CleanManifestPaths->'%(CleanPath)'->Distinct())'"
          Text="Duplicate entries found in PreDeploy_BreakingChanges.sql." />
 
   <Error Condition="'@(_CleanManifestPaths)' != '' AND !Exists('$(MSBuildProjectDirectory)\Scripts\%(_CleanManifestPaths.CleanPath)')"
-         Text="Build Error: Breaking change script not found at: [$(MSBuildProjectDirectory)\Scripts\%(_CleanManifestPaths.CleanPath)]" />
+         Text="Build Error: Script not found at: [$(MSBuildProjectDirectory)\Scripts\%(_CleanManifestPaths.CleanPath)]" />
 
   <Copy Condition="'@(_CleanManifestPaths)' != ''"
         SourceFiles="@(_CleanManifestPaths->'$(MSBuildProjectDirectory)\Scripts\%(CleanPath)')"
