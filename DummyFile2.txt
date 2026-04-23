@@ -13,19 +13,29 @@
   <ItemGroup>
     <_ManifestPaths Include="@(_RawManifestLines)"
                     Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(Identity)', '^\s*:r\s+'))">
-      <RelativePath>$([System.Text.RegularExpressions.Regex]::Replace('%(Identity)', '^\s*:r\s+[&quot;&apos;]?(\.\\)?', '').Trim().Trim('&quot;').Trim(&quot;'&quot;))</RelativePath>
+      
+      <CleanPath>$([System.Text.RegularExpressions.Regex]::Replace('%(Identity)', '^\s*:r\s+[&quot;&apos;]?(\.\\)?', ''))</CleanPath>
+      
+      <CleanPath>%(CleanPath.Replace('%0D', '').Replace('%0A', ''))</CleanPath>
+      
+      <CleanPath>%(CleanPath.Trim().Trim('&quot;').Trim("'"))</CleanPath>
     </_ManifestPaths>
   </ItemGroup>
 
-  <Error Condition="'@(_ManifestPaths)' != '' AND '@(_ManifestPaths->'%(RelativePath)')' != '@(_ManifestPaths->'%(RelativePath)'->Distinct())'"
-         Text="Duplicate entries found in PreDeploy_BreakingChanges.sql" />
+  <Message Importance="High" Text="--- DEBUG MANIFEST START ---" />
+  <Message Importance="High" Text="Found Script: [%(_ManifestPaths.CleanPath)]" />
+  <Message Importance="High" Text="Full Source Path: [$(MSBuildProjectDirectory)\Scripts\%(_ManifestPaths.CleanPath)]" />
+  <Message Importance="High" Text="--- DEBUG MANIFEST END ---" />
 
-  <Error Condition="'@(_ManifestPaths)' != '' AND !Exists('$(MSBuildProjectDirectory)\Scripts\%(_ManifestPaths.RelativePath)')"
-         Text="Build Error: Breaking change script not found at: $(MSBuildProjectDirectory)\Scripts\%(_ManifestPaths.RelativePath)" />
+  <Error Condition="'@(_ManifestPaths)' != '' AND '@(_ManifestPaths->'%(CleanPath)')' != '@(_ManifestPaths->'%(CleanPath)'->Distinct())'"
+         Text="Duplicate entries found in PreDeploy_BreakingChanges.sql - please clean up the manifest." />
+
+  <Error Condition="'@(_ManifestPaths)' != '' AND !Exists('$(MSBuildProjectDirectory)\Scripts\%(_ManifestPaths.CleanPath)')"
+         Text="Build Error: Breaking change script not found at: [$(MSBuildProjectDirectory)\Scripts\%(_ManifestPaths.CleanPath)]" />
 
   <Copy Condition="'@(_ManifestPaths)' != ''"
-        SourceFiles="@(_ManifestPaths->'$(MSBuildProjectDirectory)\Scripts\%(RelativePath)')"
-        DestinationFiles="@(_ManifestPaths->'$(TargetDir)Scripts\%(RelativePath)')"
+        SourceFiles="@(_ManifestPaths->'$(MSBuildProjectDirectory)\Scripts\%(CleanPath)')"
+        DestinationFiles="@(_ManifestPaths->'$(TargetDir)Scripts\%(CleanPath)')"
         SkipUnchangedFiles="true" />
 
 </Target>
