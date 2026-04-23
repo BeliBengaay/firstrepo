@@ -13,29 +13,28 @@
   <ItemGroup>
     <_ManifestPaths Include="@(_RawManifestLines)"
                     Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(Identity)', '^\s*:r\s+'))">
-      
-      <CleanPath>$([System.Text.RegularExpressions.Regex]::Replace('%(Identity)', '^\s*:r\s+[&quot;&apos;]?(\.\\)?', ''))</CleanPath>
-      
-      <CleanPath>%(CleanPath.Replace('%0D', '').Replace('%0A', ''))</CleanPath>
-      
-      <CleanPath>%(CleanPath.Trim().Trim('&quot;').Trim("'"))</CleanPath>
+      <RawPath>$([System.Text.RegularExpressions.Regex]::Replace('%(Identity)', '^\s*:r\s+[&quot;&apos;]?(\.\\)?', ''))</RawPath>
     </_ManifestPaths>
+
+    <_CleanManifestPaths Include="@(_ManifestPaths)">
+      <CleanPath>$([System.String]::new('%(RawPath)').Replace('%0D', '').Replace('%0A', '').Trim().Trim('&quot;').Trim("'"))</CleanPath>
+    </_CleanManifestPaths>
   </ItemGroup>
 
   <Message Importance="High" Text="--- DEBUG MANIFEST START ---" />
-  <Message Importance="High" Text="Found Script: [%(_ManifestPaths.CleanPath)]" />
-  <Message Importance="High" Text="Full Source Path: [$(MSBuildProjectDirectory)\Scripts\%(_ManifestPaths.CleanPath)]" />
+  <Message Importance="High" Text="Cleaned Filename: [%(_CleanManifestPaths.CleanPath)]" />
+  <Message Importance="High" Text="Full Source Path: [$(MSBuildProjectDirectory)\Scripts\%(_CleanManifestPaths.CleanPath)]" />
   <Message Importance="High" Text="--- DEBUG MANIFEST END ---" />
 
-  <Error Condition="'@(_ManifestPaths)' != '' AND '@(_ManifestPaths->'%(CleanPath)')' != '@(_ManifestPaths->'%(CleanPath)'->Distinct())'"
-         Text="Duplicate entries found in PreDeploy_BreakingChanges.sql - please clean up the manifest." />
+  <Error Condition="'@(_CleanManifestPaths)' != '' AND '@(_CleanManifestPaths->'%(CleanPath)')' != '@(_CleanManifestPaths->'%(CleanPath)'->Distinct())'"
+         Text="Duplicate entries found in PreDeploy_BreakingChanges.sql." />
 
-  <Error Condition="'@(_ManifestPaths)' != '' AND !Exists('$(MSBuildProjectDirectory)\Scripts\%(_ManifestPaths.CleanPath)')"
-         Text="Build Error: Breaking change script not found at: [$(MSBuildProjectDirectory)\Scripts\%(_ManifestPaths.CleanPath)]" />
+  <Error Condition="'@(_CleanManifestPaths)' != '' AND !Exists('$(MSBuildProjectDirectory)\Scripts\%(_CleanManifestPaths.CleanPath)')"
+         Text="Build Error: Breaking change script not found at: [$(MSBuildProjectDirectory)\Scripts\%(_CleanManifestPaths.CleanPath)]" />
 
-  <Copy Condition="'@(_ManifestPaths)' != ''"
-        SourceFiles="@(_ManifestPaths->'$(MSBuildProjectDirectory)\Scripts\%(CleanPath)')"
-        DestinationFiles="@(_ManifestPaths->'$(TargetDir)Scripts\%(CleanPath)')"
+  <Copy Condition="'@(_CleanManifestPaths)' != ''"
+        SourceFiles="@(_CleanManifestPaths->'$(MSBuildProjectDirectory)\Scripts\%(CleanPath)')"
+        DestinationFiles="@(_CleanManifestPaths->'$(TargetDir)Scripts\%(CleanPath)')"
         SkipUnchangedFiles="true" />
 
 </Target>
